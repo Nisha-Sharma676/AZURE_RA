@@ -20,7 +20,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         if not text:
             return func.HttpResponse(
                 json.dumps({"error": "No text provided"}),
-                status_code=400
+                status_code=400,
+                mimetype="application/json"
             )
 
         documents = [text]
@@ -33,6 +34,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         sentiment_result = client.analyze_sentiment(documents)[0]
 
         sentiment = sentiment_result.sentiment
+
         confidence = {
             "positive": sentiment_result.confidence_scores.positive,
             "neutral": sentiment_result.confidence_scores.neutral,
@@ -42,20 +44,25 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # 3. Key Phrases
         key_phrases = client.extract_key_phrases(documents)[0].key_phrases
 
-        # 4. Entities
+        # 4. Entities (FIXED INDENTATION + FILTER)
         entities_result = client.recognize_entities(documents)[0]
+
+        allowed_categories = ["Person", "Email", "PhoneNumber", "Location", "Product"]
+
         entities = [
             {"text": e.text, "category": e.category}
             for e in entities_result.entities
+            if e.category in allowed_categories
         ]
 
         # 5. PII Redaction
         pii_result = client.recognize_pii_entities(documents)[0]
         pii_redacted_text = pii_result.redacted_text
 
-        # 6. Simple summarization fallback (Azure SDK limitation)
-        summary = " ".join(key_phrases[:2]) if key_phrases else text[:120]
+        # 6. Clean Summary
+        summary = f"{sentiment.capitalize()} sentiment detected with key points in the review."
 
+        # Final response
         result = {
             "language": language,
             "sentiment": sentiment,
@@ -74,5 +81,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         return func.HttpResponse(
             json.dumps({"error": str(e)}),
-            status_code=500
+            status_code=500,
+            mimetype="application/json"
         )
