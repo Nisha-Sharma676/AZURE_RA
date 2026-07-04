@@ -110,7 +110,7 @@ const btn = document.getElementById("analyzeBtn");
 btn.addEventListener("click", async () => {
   const text = document.getElementById("reviewInput").value;
 
-  const res = await fetch("http://localhost:7071/api/analyze", {
+  const res = await fetch("https://proud-moss-010e59500.7.azurestaticapps.net/api/analyze", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({ text })
